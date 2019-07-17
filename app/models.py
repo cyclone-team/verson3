@@ -1,7 +1,7 @@
 import json
 from .DBManager import *
 from sqlalchemy.ext.declarative import declarative_base
-from flask_login import UserMixin
+from flask_login import UserMixin,AnonymousUserMixin
 
 # 创建对象的基类：
 Base = declarative_base()
@@ -29,6 +29,8 @@ class User(Base,UserMixin):
         return str_json
 
 
+
+
 # 任务实体类 数据表mission
 class Mission(Base):
     # 表的名字
@@ -43,8 +45,9 @@ class Mission(Base):
     name = Column(String(20), nullable=False)
     label = Column(String(20), nullable=True)
     finish = Column(Boolean, default=0, nullable=False)
-    alarm_time = Column(Time, nullable=True)
-    repeat = Column(Boolean, default=0, nullable=True)
+    #alarm_time = Column(Time, nullable=True)
+    #repeat = Column(Boolean, default=0, nullable=True)
+    level = Column(Integer,default=0,nullable=False)
 
 
     def to_json(self, message=None):
@@ -65,7 +68,8 @@ class Mail(Base):
 
     user_id = Column(Integer, primary_key=True,
                                 nullable=False)
-    mail_time = Column(DateTime, primary_key=True, nullable=False)
+    title = Column(String(20),primary_key=False,nullable=True)
+    mail_time = Column(Date, primary_key=True, nullable=False)
     content = Column(Text, nullable=True)
 
     def to_json(self, message=None):
@@ -120,3 +124,9 @@ class Summary(Base):
         print(dict)
         str_json = json.dumps(dict, ensure_ascii=False)
         return str_json
+
+class AnonymousUser(AnonymousUserMixin):
+    # confirmed = False
+    @property
+    def confirmed(self):
+        return False

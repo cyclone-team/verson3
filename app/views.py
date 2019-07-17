@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, request, abort, url_for
 from app import app, lm
-from .forms import LoginForm, SigninForm
+from .forms import *
 from .models import *
 from .DBManager import *
-from flask_login import login_user
+from flask_login import login_user, current_user, login_required
 
 # db_manager=DBManager("mysql+mysqlconnector","47.107.86.216:3306","root","0C45313cea34","timecontrol")
 db_manager = DBManager()
@@ -14,17 +14,16 @@ if db_manager is not None:
 def query_user(username):
     db_session = db_manager.create_session()
     user = db_session.query(User).filter(username == User.account).first()
-    print(user)
+    # print(user)
     db_session.close()
     return user
 
 
 @lm.user_loader
 def load_user(account):
-    if query_user(account) is not None:
-        curr_user = User()
-        curr_user.id = account
-        return curr_user.to_json()
+    user = query_user(account)
+    if user is not None:
+        return user
 
 
 @app.route('/')
@@ -35,13 +34,18 @@ def home():
     return render_template("login.html", form=form)
 
 
+@app.route('/test', methods=['GET', 'POST'])
+@login_required
+def test():
+    form = TaskForm()
+    return render_template('create_task.html', form=form)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     db_session = db_manager.create_session()
     form = LoginForm()
-    ac = form.account.data
-    ps = form.password.data
-    print(ac, ps)
+    # print(ac, ps)
     # 检测表单的填写
     '''
     if form.validate_on_submit():
@@ -60,15 +64,14 @@ def login():
             return render_template('create_task.html')
         '''
     if form.validate_on_submit():
+        ac = form.account.data
+        ps = form.password.data
         user = query_user(ac)
         if user is not None and ps == user.password:
-            curr_user = User()
-            curr_user.id = ac
-
-            login_user(curr_user)
-            return render_template('create_task.html')
-
-    db_session.close()
+            login_user(user, remember=True)
+            # print(current_user)
+            return redirect(url_for('create_task'))
+    # db_session.close()
 
 
 @app.route('/signin', methods=['GET', 'POST'])
@@ -90,8 +93,11 @@ def signin():
             db_session.add(user)
             db_session.commit()
             flash('Sign up successfully')
+            curr_user = User()
+            curr_user.id = ac
+            login_user(curr_user)
             return render_template('create_task.html')
-    db_session.close()
+    # db_session.close()
 
 
 @app.route('/tc')
@@ -116,7 +122,8 @@ def tce():
 
 @app.route('/create_task')
 def create_task():
-    return render_template('create_task.html')
+    form = TaskForm()
+    return render_template('create_task.html', form=form)
 
 
 @app.route('/Registration')
@@ -125,3 +132,67 @@ def Registration():
     return render_template('Registration_interface.html'
                            , form=form
                            )
+
+
+'''
+@app.route('/showmission', methods=['GET', 'POST'])
+def showmission():
+    form = ShowForm()
+    db_session=db_manager.create_session()
+    date=form.date.data
+    print(date)
+    tasks=db_session.query(Mail).filter(date==Mail.mail_time).first()
+    print(tasks)
+    print('hello')
+    return render_template('calendar.html'
+                           ,task=tasks
+                           ,form=form.date
+                           )
+   # return
+   '''
+
+
+@app.route('/cm', methods=['GET', 'POST'])
+@login_required
+def cm():
+    form = TaskForm()
+    ac = current_user.account
+    db_session = db_manager.create_session()
+    user_id = db_session.query(User).filter(ac == User.account).first().user_id
+    label = form.label.data
+    name = form.name.data
+    level = form.level.data
+    date = form.date.data
+    start_time = form.start_time.data
+    end_time = form.end_time.data
+    alarm = form.alarm.data
+    print(level, label, name, date, start_time, end_time, alarm)
+    mission = Mission(user_id=user_id, start_time=start_time, date=date, stop_time=end_time, name=name, label=label,
+                      level=level)
+    db_session.add(mission)
+    db_session.commit()
+    db_session.close()
+    return redirect("http://www.baidu.com")
+
+
+'''
+@app.route('/writemail')
+def writemail():
+    form = MailForm()
+    title = form.title.data
+    content = form.content.data
+    mail = Mail(title=title, content=content)
+    db_session = db_manager.create_session()
+    db_session.add(mail)
+    db_session.commit()
+    db_session.close()
+
+
+@app.route('/mailfrompast')
+def mf():
+    db_session=db_manager.create_session()
+    db_session.query()
+    ac=current_user.id
+    user=db_session.query(User).filter(ac==User.account)
+    user_id=user.user_id
+'''

@@ -36,7 +36,7 @@
 
 <div style="height: 150px"></div>
 <!--登录界面表单部分-->
-<form action="/login" method="post" name="login">
+<form action="{{ url_for('login') }}" method="post" name="login">
     {{ form.hidden_tag() }}
     <div class="am-form am-form-horizontal" style="height: 200px">
         <div style="height: 80px;font-size: 20px">
